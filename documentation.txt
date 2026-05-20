@@ -1,0 +1,19 @@
+To run:
+
+    Virtual environment tool:
+        sudo apt update
+        sudo apt install python3-venv
+
+    Create virtual environment:
+        python3 -m venv venv
+
+    Run venv:
+        source venv/bin/activate
+
+    Installing packages required:
+        pip install fastapi "uvicorn[standard]"
+        pip install python-dotenv
+        pip install sqlalchemy
+        pip install pymysql
+        pip install sqlmodel
+        pip install python-multipart

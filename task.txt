@@ -1,0 +1,53 @@
+Assignment: Movie Review Aggregator API
+Project Overview
+Develop an API that aggregates movie reviews and ratings from multiple sources.
+Users can search for movies, view details, read reviews, and submit their own reviews.
+The API should also perform basic data aggregation to calculate average ratings.
+
+Requirements
+External API Integration
+
+Integrate with a public movie database API (like OMDB API or TMDb API) to fetch movie details (title, genre, release date, director, etc.).
+Store the retrieved movie data in a local SQLite or PostgreSQL database.
+User Authentication
+
+Implement a user registration and login system with JWT authentication.
+Users should have the ability to register, log in, and submit reviews.
+Movie Search
+
+Create an endpoint to allow users to search for movies by title.
+When a user searches, check the local database first. If the movie isn’t present, fetch details from the external API and store it locally for future queries.
+Movie Details and Reviews
+
+Movie Details: Endpoint to retrieve detailed information about a movie, including title, release date, genre, and a list of all user-submitted reviews.
+Submit Review: Authenticated users can submit reviews with:
+Rating (1-5 stars)
+Comment (max 300 characters)
+Update Review: Allow users to update their own reviews.
+Delete Review: Allow users to delete their own reviews.
+Data Aggregation
+
+Calculate and return the average rating for each movie based on user reviews.
+Include the average rating in the movie details response.
+Endpoints and Permissions
+
+/register (POST): Register a new user.
+/login (POST): Login a user and return a JWT token.
+/movies/search (GET): Search for movies by title.
+/movies/{movie_id} (GET): Retrieve details about a specific movie.
+/movies/{movie_id}/reviews (POST): Submit a review for a specific movie.
+/movies/{movie_id}/reviews/{review_id} (PUT, DELETE): Update or delete a specific review.
+Error Handling and Validation
+
+Implement input validation for rating values, review length, and authentication requirements.
+Ensure appropriate error responses for invalid requests, such as unauthorized access, invalid movie ID, or duplicate reviews.
+Asynchronous Operations
+
+Implement asynchronous requests where applicable, such as fetching movie details from the external API or database operations to improve efficiency.
+Documentation
+
+Provide clear API documentation with FastAPI’s auto-generated Swagger UI.
+Bonus Points (Optional)
+Caching: Add caching to store movie details from external API for a specified duration, reducing redundant API calls.
+User Profile: Implement a user profile endpoint where users can view all their submitted reviews.
+Testing: Add unit tests for main endpoints and key functionalities using pytest
