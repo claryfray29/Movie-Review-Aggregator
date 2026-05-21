@@ -24,7 +24,7 @@ def post_user(user:schemas.UsersCreate, db:Session=Depends(get_db)):
 #login
 @app.post("/login", response_model=Token)
 async def login_for_access_token(
-    from_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db)
 ):
     user = authenticate_user(db, from_data.username, from_data.password)

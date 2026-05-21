@@ -57,7 +57,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_token(Token: str):
+def verify_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithm=[ALGORITHM])
         return payload
