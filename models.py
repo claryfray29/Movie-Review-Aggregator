@@ -16,10 +16,13 @@ class Movie(Base):
     __tablename__ = 'movie'
     
     movie_id = Column(Integer, primary_key=True, autoincrement=True)
+    imdb_id = Column(String(50), unique=True, nullable=True)
     movie_name = Column(String(255))
-    movie_date = Column(Date)
-    movie_genre = Column(String(255))
+    movie_year = Column(Integer, nullable = True)
+    movie_date = Column(Date, nullable=True)
+    movie_genre = Column(String(255), nullable = True)
     movie_director = Column(String(255))
+    movie_plot = Column(String(1000), nullable=True)
     avg_rating = Column(Float, default=0)
     other_info = Column(JSON, nullable=True)
 

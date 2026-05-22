@@ -10,10 +10,12 @@ CREATE TABLE users(
 
 CREATE TABLE movie(
     movie_id INT AUTO_INCREMENT PRIMARY KEY,
+    imdb_id VARCHAR(50) UNIQUE NULL,
     movie_name VARCHAR(255),
-    movie_date DATE,
+    movie_year INT,
     movie_genre VARCHAR(255),
     movie_director VARCHAR(255),
+    movie_plot VARCHAR(1000) NULL,
     avg_rating FLOAT DEFAULT 0,
     other_info JSON
 );

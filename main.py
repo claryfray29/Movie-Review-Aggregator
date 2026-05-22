@@ -24,7 +24,7 @@ def post_user(user:schemas.UsersCreate, db:Session=Depends(get_db)):
 #login
 @app.post("/login", response_model=Token)
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    from_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db)
 ):
     user = authenticate_user(db, from_data.username, from_data.password)
@@ -47,6 +47,20 @@ async def login_for_access_token(
 @app.get("/movies/{movie_name}/", response_model=list[schemas.Movie])
 async def get_movie(movie_name: str, db:Session=Depends(get_db)):
     db_movie = await crud.get_movie(db, movie_name = movie_name)
+    if not db_movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    return db_movie
+
+# @app.get("/movies/search/{movie_name}/", response_model=list[schemas.Movie])
+# async def search_movie(movie_name: str, db: Session = Depends(get_db)):
+#     db_movies = await crud.get_movie(db, movie_name=movie_name)
+#     if not db_movies:
+#         raise HTTPException(status_code=404, detail="Movie not found")
+#     return db_movies
+
+@app.get("/movies/search/{movie_id}/", response_model=schemas.Movie)
+async def get_movie_details(movie_id: int, db: Session = Depends(get_db)):
+    db_movie = await crud.get_movie_details(db, movie_id=movie_id)
     if not db_movie:
         raise HTTPException(status_code=404, detail="Movie not found")
     return db_movie
