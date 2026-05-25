@@ -21,18 +21,18 @@ def create_user(db: Session, user:schemas.UsersCreate):
     return db_user
 
 #to search for a particular movie
-async def get_movie(db: Session, movie_name: str):
+async def get_movie_list(db: Session, movie_name: str):
     if not movie_name:
         raise HTTPException(status_code=400, detail="Movie title required.")
     
-    movie_name=movie_name.title()
+    # movie_name=movie_name.title()
 
-    #SET @name = '{movie_name}'
-    query = text("SELECT * FROM movie WHERE movie_name LIKE :name")
-    result = db.execute(query,{"name" : f"%{movie_name}%"}).mappings().all()
+    # #SET @name = '{movie_name}'
+    # query = text("SELECT * FROM movie WHERE movie_name LIKE :name")
+    # result = db.execute(query,{"name" : f"%{movie_name}%"}).mappings().all()
     
-    if result:
-        return result
+    # if result:
+    #     return result
 
     OMDB_API_KEY = os.getenv("OMDB_API_KEY")
 
@@ -51,18 +51,19 @@ async def get_movie(db: Session, movie_name: str):
             data = response.json()
             print(data)
 
+        movies_list = []
         if data.get("Response") == "True" and "Search" in data:
             omdb_movie = data.get("Search", [])
             print(omdb_movie)
-            saved_movies = []
+            # movies_list = []
 
             for item in omdb_movie:
                 print(item)
-                existing_stmt = select(models.Movie).where(models.Movie.movie_name == item.get("Title"))
-                existing = db.execute(existing_stmt).scalars().first()
-                if existing:
-                    saved_movies.append(existing)
-                    continue
+                # existing_stmt = select(models.Movie).where(models.Movie.movie_name == item.get("Title"))
+                # existing = db.execute(existing_stmt).scalars().first()
+                # if existing:
+                #     movies_list.append(existing)
+                #     continue
 
                 raw_year = item.get("Year")
                 clean_year = None
@@ -73,79 +74,144 @@ async def get_movie(db: Session, movie_name: str):
                     except ValueError:
                         clean_year = None
 
-                db_movie = models.Movie(
-                    movie_name=item.get("Title"),
-                    movie_genre="idk",
-                    movie_year=clean_year,
-                    movie_director="Unknown",
-                    other_info=item
-                )
+                list_movie = {
+                    "movie_name": item.get("Title"),
+                    # "movie_genre": "idk",
+                    "movie_year": clean_year,
+                    "movie_director": "Unknown",
+                    "other_info": item
+                }
+                movies_list.append(list_movie)
 
-                db.add(db_movie)
-                saved_movies.append(db_movie)
+            #     db.add(db_movie)
+            #     movies_list.append(db_movie)
 
-            db.commit()
+            # db.commit()
 
-            for movie in saved_movies:
-                db.refresh(movie)
+            # for movie in movies_list:
+            #     db.refresh(movie)
 
-            return saved_movies
-
-        else:
-            raise HTTPException(status_code=404, detail="Movie not found")
+        return movies_list
+    #     else:
+    #         raise HTTPException(status_code=404, detail="Movie not found")
 
     except httpx.RequestError:
         raise HTTPException(status_code=500, detail="Failed to fetch movie details")
             
 
 #to get more details
-async def get_movie_details(db: Session, movie_id: int):
-    db_movie = db.query(models.Movie).filter(models.Movie.movie_id == movie_id).first()
-    
-    if not db_movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+async def get_movie_details(db: Session, movie_title: str):
+    if not movie_title:
+        raise HTTPException(status_code=400, detail="Movie title is required.")
+
+    db_movie = db.query(models.Movie).filter(models.Movie.movie_name == movie_title).first()
+    if db_movie:
+        return db_movie
+    #     raise HTTPException(status_code=404, detail="Movie not found in local db")
 
     OMDB_API_KEY = os.getenv("OMDB_API_KEY")
+    TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+    if not OMDB_API_KEY or not TMDB_API_KEY:
+        raise HTTPException(status_code=500, detail="api keys missing")
 
-    imdb_id = db_movie.other_info.get("imdbID") if db_movie.other_info else None
-    if imdb_id:
-        url = f"http://www.omdbapi.com/?apikey={OMDB_API_KEY}&i={imdb_id}"
-    else:
-        url = f"http://www.omdbapi.com/?apikey={OMDB_API_KEY}&t={db_movie.movie_name}"
+    # imdb_id = db_movie.other_info.get("imdbID") if db_movie.other_info else None
+    # if imdb_id:
+    #     url = f"http://www.omdbapi.com/?apikey={OMDB_API_KEY}&i={imdb_id}"
+    # else:
+
+    url = f"http://www.omdbapi.com/?apikey={OMDB_API_KEY}&t={movie_title.strip()}&plot=full"
+    tmdb_url = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_API_KEY}&query={movie_title.strip()}"
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
+            omdb_response = await client.get(url)
 
-            if response.status_code != 200:
-                raise HTTPException(status_code=502, detail="Failed to fetch")
+            if omdb_response.status_code == 200:
+                omdb_data = omdb_response.json()
 
-            data = response.json()
+            if omdb_data.get("Response") == "True":
+                raw_year = omdb_data.get("Year")
+                clean_year = int(str(raw_year)[:4]) if raw_year and raw_year != "N/A" else None
 
-        if data.get("Response") == "True":
+                release_date = omdb_data.get("Released")
+                if release_date and release_date != "N/A":
+                    try:
+                        release_date = datetime.strptime(release_date, "%d %b %Y").date()
+                    except ValueError:
+                        release_date = None
 
-            release_date = data.get("Released")
-            if release_date and release_date != "N/A":
-                try:
-                    release_date = datetime.strptime(release_date, "%d %b %Y").date()
-                except ValueError:
-                    release_date = None
+                # db_movie.movie_date = release_date
+                # db_movie.movie_genre = omdb_data.get("Genre", "Unknown") if omdb_data.get("Genre") != "N/A" else "Unknown"
+                # db_movie.movie_director = omdb_data.get("Director", "Unknown") if omdb_data.get("Director") != "N/A" else "Unknown"
+                # db_movie.imdb_id = omdb_data.get("imdbID", db_movie.imdb_id)
+                # db_movie.other_info = omdb_data
+                # db_movie.movie_plot = omdb_data.get("Plot", "Unknown") if omdb_data.get("Plot") != "N/A" else "Unknown"
+                
+                db_movie = models.Movie(
+                    movie_name=omdb_data.get("Title"),
+                    imdb_id=omdb_data.get("imdbID"),
+                    movie_year=clean_year,
+                    movie_date=release_date,
+                    movie_genre=omdb_data.get("Genre", "Unknown") if omdb_data.get("Genre") != "N/A" else "Unknown",
+                    movie_director=omdb_data.get("Director", "Unknown") if omdb_data.get("Director") != "N/A" else "Unknown",
+                    movie_plot=omdb_data.get("Plot", "Unknown") if omdb_data.get("Plot") != "N/A" else "Unknown",
+                    other_info=omdb_data
+                )
 
-            db_movie.movie_date = release_date
-            db_movie.movie_genre = data.get("Genre", "Unknown") if data.get("Genre") != "N/A" else "Unknown"
-            db_movie.movie_director = data.get("Director", "Unknown") if data.get("Director") != "N/A" else "Unknown"
-            db_movie.imdb_id = data.get("imdbID", db_movie.imdb_id)
-            db_movie.other_info = data
-            db_movie.movie_plot = data.get("Plot", "Unknown") if data.get("Plot") != "N/A" else "Unknown"
-
-            db.commit()
-            db.refresh(db_movie)
-            return db_movie
-        else:
-            raise HTTPException(status_code=404, detail="Movie details not found")
+                db.add(db_movie)
+                db.commit()
+                db.refresh(db_movie)
+                return db_movie
+        # else:
+        #     raise HTTPException(status_code=404, detail="Movie details not found")
 
     except httpx.RequestError:
         raise HTTPException(status_code=500, detail="Failed to fetch movie details")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            tmdb_response = await client.get(tmdb_url)
+
+            if tmdb_response.status_code != 200:
+                raise HTTPException(status_code=502, detail="Failed to fetch from TMDB")
+
+            tmdb_data = tmdb_response.json()    
+
+            if tmdb_data.get("results"):
+                tmdb_movie = tmdb_data["results"][0]
+                print("tmdb saved")
+
+                release_date = None
+                raw_date=tmdb_movie.get("release_date")
+                clean_year = None
+                if raw_date:
+                    try:
+                        release_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
+                        clean_year = release_date.year
+                    except ValueError:
+                        release_date = None
+                
+                poster_path = tmdb_movie.get("poster_path")
+                poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+
+                db_movie = models.Movie(
+                    movie_name=tmdb_movie.get("title"),
+                    movie_year=clean_year,
+                    movie_date=release_date,
+                    movie_genre="Unknown",
+                    movie_director="Unknown",
+                    movie_plot="Unknown",
+                    poster_url=poster_url,
+                    other_info=tmdb_movie
+                )
+                db.add(db_movie)
+                db.commit()
+                db.refresh(db_movie)
+                return db_movie
+            else:
+                raise HTTPException(status_code=404, detail="Movie details not found in TMDB") 
+    except httpx.RequestError:
+        raise HTTPException(status_code=500, detail="Failed to fetch from TMDB")
 
 #to add a review to some movie
 def create_review(db: Session, review:schemas.ReviewCreate, user_name: str):

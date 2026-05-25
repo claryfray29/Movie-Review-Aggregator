@@ -13,6 +13,7 @@ CREATE TABLE movie(
     imdb_id VARCHAR(50) UNIQUE NULL,
     movie_name VARCHAR(255),
     movie_year INT,
+    movie_date DATE NULL,
     movie_genre VARCHAR(255),
     movie_director VARCHAR(255),
     movie_plot VARCHAR(1000) NULL,

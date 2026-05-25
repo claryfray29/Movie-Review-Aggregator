@@ -23,6 +23,9 @@ class Movie(Base):
     movie_genre = Column(String(255), nullable = True)
     movie_director = Column(String(255))
     movie_plot = Column(String(1000), nullable=True)
+
+    poster_url = Column(String(500), nullable=True)
+    
     avg_rating = Column(Float, default=0)
     other_info = Column(JSON, nullable=True)
 

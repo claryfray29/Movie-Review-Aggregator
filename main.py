@@ -46,10 +46,10 @@ async def login_for_access_token(
 #search for a movie
 @app.get("/movies/{movie_name}/", response_model=list[schemas.Movie])
 async def get_movie(movie_name: str, db:Session=Depends(get_db)):
-    db_movie = await crud.get_movie(db, movie_name = movie_name)
-    if not db_movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
-    return db_movie
+    return await crud.get_movie_list(db, movie_name = movie_name)
+    # if not db_movie:
+    #     raise HTTPException(status_code=404, detail="Movie not found")
+    # return db_movie
 
 # @app.get("/movies/search/{movie_name}/", response_model=list[schemas.Movie])
 # async def search_movie(movie_name: str, db: Session = Depends(get_db)):
@@ -58,12 +58,12 @@ async def get_movie(movie_name: str, db:Session=Depends(get_db)):
 #         raise HTTPException(status_code=404, detail="Movie not found")
 #     return db_movies
 
-@app.get("/movies/search/{movie_id}/", response_model=schemas.Movie)
-async def get_movie_details(movie_id: int, db: Session = Depends(get_db)):
-    db_movie = await crud.get_movie_details(db, movie_id=movie_id)
-    if not db_movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
-    return db_movie
+@app.get("/movies/search/{movie_title}/", response_model=schemas.Movie)
+async def get_movie_details(movie_title: str, db: Session = Depends(get_db)):
+    return await crud.get_movie_details(db, movie_title=movie_title)
+    # if not db_movie:
+    #     raise HTTPException(status_code=404, detail="Movie not found")
+    # return db_movie
 
 #add comment
 @app.post("/movies/reviews/", response_model=schemas.Review)

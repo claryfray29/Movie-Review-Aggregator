@@ -38,19 +38,20 @@ class Review(ReviewBase):
 class MovieBase(BaseModel):
     movie_name: str
     movie_year: int | None = None
-    movie_genre: str
-    movie_director: str
+    movie_genre: str | None = None
+    movie_director: str | None = None
     movie_plot: str | None = None
+    poster_url: str | None = None
 
 
 class MovieCreate(MovieBase):
     pass
 
 class Movie(MovieBase):
-    movie_id: int
+    movie_id: int | None = None
     movie_year: int | None = None
     movie_date: date | None = None
-    avg_rating: float
+    avg_rating: float | None = 0.0
     reviews: list[Review] = []
 
     class Config:
