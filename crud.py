@@ -238,28 +238,54 @@ def create_review(db: Session, review:schemas.ReviewCreate, user_name: str):
     db.refresh(db_review)
     return db_review
 
-def update_review(db: Session, user_name: str, review:schemas.ReviewCreate):
-    db_movie = db.query(models.Movie).filter(models.Movie.movie_name == review.movie_name).first()
+def update_review(db: Session, user_name: str, review_id: int, rating: int, comment: str):
+    db_review = db.query(models.Review).filter(models.Review.review_id == review_id, models.Review.user_name == user_name).first()
 
-    if not db_movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+    if not db_review:
+        raise HTTPException(status_code=404, detail="Review not found")
 
-    db_review = db.query(models.Review).filter(models.Review.movie_id == db_movie.movie_id, models.Review.user_name == user_name).first()
+    if db_review.user_name != user_name:
+        raise HTTPException(
+            status_code=403, 
+            detail="Permission denied. You can only update your own reviews."
+        )
 
-    if db_review:
-        db_review.rating = review.rating
-        db_review.comment = review.comment
+    db_review.rating = rating
+    db_review.comment = comment
+    db.commit()
+
+    db_movie = db.query(models.Movie).filter(models.Movie.movie_id == db_review.movie_id).first()
+    if db_movie and db_movie.reviews:
+        all_ratings = [r.rating for r in db_movie.reviews]
+        db_movie.avg_rating = sum(all_ratings) / len(all_ratings)
         db.commit()
-        db.refresh(db_review)
+
+    db.refresh(db_review)
     return db_review
 
-def delete_review(db:Session, user_name: str, review:schemas.ReviewCreate):
-    db_movie = db.query(models.Movie).filter(models.Movie.movie_name == review.movie_name).first()
 
-    if not db_movie:
-        raise HTTPException(status_code=404, detail="Movie not found")
+def delete_review(db:Session, user_name: str, review_id: int):
+    db_review = db.query(models.Review).filter(models.Review.review_id == review_id, models.Review.user_name == user_name).first()
 
-    db_review = db.query(models.Review).filter(models.Review.movie_id == db_movie.movie_id, models.Review.user_name == user_name).first()
+    if not db_review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    if db_review.user_name != user_name:
+        raise HTTPException(
+            status_code=403, 
+            detail="Permission denied. You can only delete your own reviews."
+        )
+
+    movie_id = db_review.movie_id
+    db_movie = db.query(models.Movie).filter(models.Movie.movie_id == movie_id).first()
+    
+    if db_movie and db_movie.reviews:
+        all_rating = [i.rating for i in db_movie.reviews if i.review_id != review_id]
+        db_movie.avg_rating = sum(all_rating)/len(all_rating) if all_rating else 0.0
+
+    db.delete(db_review)
+    db.commit()
+    return True
 
     if db_review:
         db.delete(db_review)

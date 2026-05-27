@@ -28,6 +28,7 @@ class ReviewCreate(ReviewBase):
     movie_name: str
 
 class Review(ReviewBase):
+    review_id: int
     user_name: str
 
     class Config:
